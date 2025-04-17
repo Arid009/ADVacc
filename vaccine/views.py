@@ -21,13 +21,6 @@ from django.core.exceptions import ValidationError
 
 
 class VaccineViewSet(ModelViewSet):
-    """
-    API endpoint for managing products in the e-commerce store
-     - Allows authenticated admin to create, update, and delete products
-     - Allows users to browse and filter product
-     - Support searching by name, description, and category
-     - Support ordering by price and updated_at
-    """
     queryset = Vaccine.objects.all()
     serializer_class = VaccineSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -73,9 +66,13 @@ class ReviewViewSet(ModelViewSet):
         serializer.save(user=self.request.user)
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Review.objects.none()
         return Review.objects.select_related('user').filter(vaccine_id=self.kwargs.get('vaccine_pk'))
 
     def get_serializer_context(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return super().get_serializer_context()
         return {'vaccine_id': self.kwargs.get('vaccine_pk')}
 
 class DoctorViewSet(ModelViewSet):
@@ -83,6 +80,8 @@ class DoctorViewSet(ModelViewSet):
     permission_classes = [IsDoctorOrAdmin]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return DoctorProfile.objects.none()
         if self.request.user.groups.filter(name='Doctor').exists():
             return DoctorProfile.objects.select_related('user').filter(user=self.request.user)
         elif self.request.user.is_staff:
@@ -100,8 +99,8 @@ class BookingViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated] 
 
     def get_queryset(self):
-        # if getattr(self, 'swagger_fake_view', False):
-        #     return Booking.objects.none()
+        if getattr(self, 'swagger_fake_view', False):
+            return Booking.objects.none()
         if self.request.user.is_staff:
             return Booking.objects.select_related('vaccine').all()
         return Booking.objects.select_related('vaccine').filter(user=self.request.user)

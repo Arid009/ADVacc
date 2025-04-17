@@ -12,6 +12,8 @@ class IsReviewAuthorOrReadonly(permissions.BasePermission):
             vaccine_id = view.kwargs.get('vaccine_pk')
             if user and user.is_authenticated and vaccine_id:
                 try:
+                    if getattr(self, 'swagger_fake_view', False):
+                        return Booking.objects.none()
                     vaccine = Vaccine.objects.get(pk=vaccine_id)
                     return Booking.objects.filter(user=user, vaccine=vaccine).exists()
                 except Vaccine.DoesNotExist:
